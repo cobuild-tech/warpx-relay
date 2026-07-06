@@ -9,8 +9,8 @@
  * Get the start command from warpx.dev → Settings → AI → Local Claude Code → "Copy start command"
  * That button reads both tokens from your browser session automatically.
  *
- * WARPX_WS_URL: defaults to the warpx.dev production WebSocket.
- *               override for local dev: WARPX_WS_URL=ws://localhost:8000
+ * WARPX_WS_URL: defaults to the warpx.dev production WebSocket (API Gateway base URL).
+ *               override for local dev: WARPX_WS_URL=ws://localhost:8000/relay/ws
  */
 "use strict";
 

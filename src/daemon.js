@@ -60,7 +60,7 @@ async function startDaemon(config) {
 }
 
 async function connect(config) {
-  const url = `${config.wsUrl}/relay/ws?workspace_id=${encodeURIComponent(config.workspaceId)}&token=${encodeURIComponent(config.token)}`;
+  const url = `${config.wsUrl}?workspace_id=${encodeURIComponent(config.workspaceId)}&token=${encodeURIComponent(config.token)}`;
 
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(url);
