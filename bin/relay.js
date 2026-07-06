@@ -3,14 +3,11 @@
  * warpx-relay — routes WarpX chat through your local Claude Code session.
  * No API key needed. Uses the `claude` CLI you already have authenticated.
  *
- * Usage (recommended — token never expires, reconnects automatically):
- *   WARPX_WORKSPACE_ID=<uuid>  WARPX_REFRESH_TOKEN=<refresh_token>  node bin/relay.js
+ * Usage (recommended — access token used immediately, refresh token stored for auto-renewal):
+ *   WARPX_WORKSPACE_ID=<uuid>  WARPX_TOKEN=<access_token>  WARPX_REFRESH_TOKEN=<refresh_token>  node bin/relay.js
  *
- * Or with a raw access token (expires in ~1 hour):
- *   WARPX_WORKSPACE_ID=<uuid>  WARPX_TOKEN=<access_token>  node bin/relay.js
- *
- * Get the start command from warpx.dev → Settings → Connections → "Copy start command"
- * That button reads the refresh token from your browser session automatically.
+ * Get the start command from warpx.dev → Settings → AI → Local Claude Code → "Copy start command"
+ * That button reads both tokens from your browser session automatically.
  *
  * WARPX_WS_URL: defaults to the warpx.dev production WebSocket.
  *               override for local dev: WARPX_WS_URL=ws://localhost:8000
@@ -52,26 +49,31 @@ if (check.error) {
 console.log(`[warpx-relay] ${check.stdout.trim()}`);
 console.log(`[warpx-relay] Workspace : ${workspaceId}`);
 console.log(`[warpx-relay] Backend   : ${wsUrl}`);
-console.log(`[warpx-relay] Auth      : ${refreshToken ? "refresh token (auto-renews)" : "access token (1h)"}`);
+const authDesc = rawToken && refreshToken ? "access token + refresh (auto-renews)"
+               : refreshToken            ? "refresh token only (auto-renews)"
+               :                           "access token (1h)";
+console.log(`[warpx-relay] Auth      : ${authDesc}`);
 console.log(`[warpx-relay] No API key needed — using your local Claude Code session`);
 console.log();
 
 async function main() {
   let token = rawToken;
 
-  if (refreshToken) {
-    // Exchange refresh token for an initial access token
+  if (!token && refreshToken) {
+    // No access token — exchange refresh token to get one
     process.stdout.write("[warpx-relay] Exchanging refresh token… ");
     try {
       const result = await exchangeRefreshToken(refreshToken);
       token = result.accessToken;
-      // Store the latest refresh token so we can re-exchange on reconnect
       main._currentRefreshToken = result.refreshToken;
       console.log("ok");
     } catch (err) {
       console.error(`\n[warpx-relay] Token exchange failed: ${err.message}`);
       process.exit(1);
     }
+  } else if (token && refreshToken) {
+    // Access token provided — use it directly, store refresh token for renewal
+    main._currentRefreshToken = refreshToken;
   }
 
   await startDaemon({
