@@ -1,0 +1,26 @@
+{
+  "name": "warpx-relay",
+  "version": "0.1.0",
+  "description": "Relay daemon: routes WarpX workspace chat through your local Claude Code session",
+  "main": "src/daemon.js",
+  "bin": "bin/relay.js",
+  "scripts": {
+    "start": "node bin/relay.js"
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cobuild-tech/cbx-notes"
+  },
+  "keywords": ["warpx", "claude", "relay", "mcp"]
+}
