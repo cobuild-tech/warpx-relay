@@ -16,6 +16,7 @@
 
 const { startDaemon } = require("../src/daemon");
 const { exchangeRefreshToken } = require("../src/auth");
+const { preventSleep } = require("../src/sleep");
 
 const args = process.argv.slice(2);
 const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : undefined; };
@@ -88,6 +89,12 @@ async function main() {
 }
 
 main._currentRefreshToken = refreshToken;
+
+// Keep the machine awake while the relay is running so long AI tasks aren't
+// interrupted by system sleep. macOS: caffeinate tied to our PID (auto-exits).
+// Windows: PowerShell SetThreadExecutionState loop. Linux: no-op.
+const releaseSleep = preventSleep();
+process.on("exit", () => releaseSleep());
 
 main().catch((err) => {
   console.error("[warpx-relay] Fatal:", err.message);

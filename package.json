@@ -1,6 +1,6 @@
 {
   "name": "warpx-relay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Relay daemon: routes WarpX workspace chat through your local Claude Code session",
   "main": "src/daemon.js",
   "bin": "bin/relay.js",
