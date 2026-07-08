@@ -17,6 +17,7 @@
 const { startDaemon } = require("../src/daemon");
 const { exchangeRefreshToken } = require("../src/auth");
 const { preventSleep } = require("../src/sleep");
+const { ensurePermissionsConfigured, ALWAYS_DISALLOWED, loadConfig } = require("../src/permissions");
 
 const args = process.argv.slice(2);
 const get  = (flag) => { const i = args.indexOf(flag); return i !== -1 ? args[i + 1] : undefined; };
@@ -82,6 +83,7 @@ async function main() {
     token,
     wsUrl,
     model,
+    relayConfig: main._relayConfig,
     // Called by daemon.js when a 4001 (token expired) is received and refresh is needed
     refreshToken: refreshToken ? () => main._currentRefreshToken : null,
     onTokenRefreshed: refreshToken ? (newRefresh) => { main._currentRefreshToken = newRefresh; } : null,
@@ -96,7 +98,21 @@ main._currentRefreshToken = refreshToken;
 const releaseSleep = preventSleep();
 process.on("exit", () => releaseSleep());
 
-main().catch((err) => {
+(async () => {
+  // Run first-time setup if ~/.warpx-relay.json doesn't have a readScope yet.
+  const permCfg = await ensurePermissionsConfigured();
+
+  const scopeLabel = permCfg.readScope === "project"
+    ? `project (${permCfg.projectDir})`
+    : permCfg.readScope;
+  console.log(`[warpx-relay] Read scope : ${scopeLabel}`);
+  console.log(`[warpx-relay] Code edits : disabled (${ALWAYS_DISALLOWED.join(", ")})`);
+  console.log(`[warpx-relay] WarpX MCP  : ✓ (create tasks, read pages, etc.)`);
+  console.log();
+
+  main._relayConfig = permCfg;
+  await main();
+})().catch((err) => {
   console.error("[warpx-relay] Fatal:", err.message);
   process.exit(1);
 });

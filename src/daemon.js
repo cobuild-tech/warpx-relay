@@ -83,10 +83,12 @@ async function connect(config) {
 
       try {
         await runClaudeRound({
-          requestId: request_id,
+          requestId:  request_id,
           messages,
           system,
-          model:     config.model,
+          model:      config.model,
+          readScope:  config.relayConfig?.readScope  || "home",
+          projectDir: config.relayConfig?.projectDir || null,
           send: (payload) => {
             if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
           },
