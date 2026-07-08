@@ -14,8 +14,19 @@
  */
 "use strict";
 
+const os   = require("os");
+const path = require("path");
 const { spawn } = require("child_process");
 const { ALWAYS_DISALLOWED } = require("./permissions");
+
+// Expand PATH so the claude CLI is found regardless of how the relay was started.
+// Claude Code installs to ~/.local/bin by default; Homebrew puts things in /opt/homebrew/bin.
+const EXPANDED_PATH = [
+  process.env.PATH,
+  path.join(os.homedir(), ".local", "bin"),
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+].filter(Boolean).join(path.delimiter);
 
 /**
  * Build a prompt string from the OpenAI-format messages + system prompt.
@@ -143,7 +154,7 @@ async function runClaudeRound({ requestId, messages, system, model, readScope, p
 
     const spawnOpts = {
       stdio: ["pipe", "pipe", "pipe"],
-      env:   { ...process.env },
+      env:   { ...process.env, PATH: EXPANDED_PATH },
     };
     // Restrict working directory when readScope === "project"
     if (readScope === "project" && projectDir) {
