@@ -15,6 +15,7 @@
 "use strict";
 
 const { spawn } = require("child_process");
+const { ALWAYS_DISALLOWED } = require("./permissions");
 
 /**
  * Build a prompt string from the OpenAI-format messages + system prompt.
@@ -117,28 +118,39 @@ function handleLine(line, requestId, send, state) {
 
 /**
  * @param {object} opts
- * @param {string}   opts.requestId
- * @param {Array}    opts.messages   OpenAI-format conversation
- * @param {string}   opts.system     WarpX workspace system prompt
- * @param {string}   opts.model      e.g. "claude-sonnet-4-6" (--model flag to claude CLI)
- * @param {Function} opts.send       (payload) => void — sends back to WarpX backend
+ * @param {string}        opts.requestId
+ * @param {Array}         opts.messages   OpenAI-format conversation
+ * @param {string}        opts.system     WarpX workspace system prompt
+ * @param {string}        opts.model      e.g. "claude-sonnet-4-6" (--model flag to claude CLI)
+ * @param {string}        opts.readScope  "home" | "project" | "system" — from permissions config
+ * @param {string|null}   opts.projectDir path to restrict CWD to when readScope === "project"
+ * @param {Function}      opts.send       (payload) => void — sends back to WarpX backend
  */
-async function runClaudeRound({ requestId, messages, system, model, send }) {
+async function runClaudeRound({ requestId, messages, system, model, readScope, projectDir, send }) {
   const prompt = buildPrompt(messages, system);
 
   return new Promise((resolve, reject) => {
+    // Code-change tools are always blocked in workspace chat.
+    // WarpX MCP tools (create tasks, read pages, etc.) still work.
     const cliArgs = [
       "--print",
       "--output-format", "stream-json",
       "--verbose",
       "--dangerously-skip-permissions",   // needed for non-interactive MCP tool calls
       "--model", model,
+      "--disallowedTools", ALWAYS_DISALLOWED.join(","),
     ];
 
-    const proc = spawn("claude", cliArgs, {
+    const spawnOpts = {
       stdio: ["pipe", "pipe", "pipe"],
       env:   { ...process.env },
-    });
+    };
+    // Restrict working directory when readScope === "project"
+    if (readScope === "project" && projectDir) {
+      spawnOpts.cwd = projectDir;
+    }
+
+    const proc = spawn("claude", cliArgs, spawnOpts);
 
     // Write prompt to stdin
     proc.stdin.write(prompt, "utf8");
