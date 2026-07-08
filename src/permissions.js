@@ -63,7 +63,15 @@ async function ensurePermissionsConfigured() {
       rl2.question("Project directory path (e.g. ~/projects/my-app): ", resolve)
     );
     rl2.close();
-    projectDir = raw.trim().replace(/^~/, os.homedir());
+    const rawPath = raw.trim().replace(/^~/, os.homedir());
+    // Resolve relative paths against the home directory so "cbx-notes" → "~/cbx-notes"
+    projectDir = path.isAbsolute(rawPath) ? rawPath : path.join(os.homedir(), rawPath);
+    if (!fs.existsSync(projectDir)) {
+      console.log(`\n[warpX relay] Warning: directory not found: ${projectDir}`);
+      console.log("[warpX relay] Check the path is correct. Continuing with home directory scope.\n");
+      readScope = "home";
+      projectDir = null;
+    }
   } else if (choice.trim() === "3") {
     readScope = "system";
   }
